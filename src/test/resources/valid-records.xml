@@ -1,0 +1,23 @@
+<records>
+    <record reference="138932">
+        <accountNumber>NL90ABNA0585647886</accountNumber>
+        <description>Flowers for Richard Bakker</description>
+        <startBalance>94.9</startBalance>
+        <mutation>+14.63</mutation>
+        <endBalance>109.53</endBalance>
+    </record>
+    <record reference="101339">
+        <accountNumber>NL27SNSB0917829871</accountNumber>
+        <description>Tickets from Rik King</description>
+        <startBalance>84.46</startBalance>
+        <mutation>+40.45</mutation>
+        <endBalance>124.91</endBalance>
+    </record>
+    <record reference="119582">
+        <accountNumber>NL32RABO0195610843</accountNumber>
+        <description>Subscription from Vincent de Vries</description>
+        <startBalance>38.86</startBalance>
+        <mutation>+28.77</mutation>
+        <endBalance>67.63</endBalance>
+    </record>
+</records>
