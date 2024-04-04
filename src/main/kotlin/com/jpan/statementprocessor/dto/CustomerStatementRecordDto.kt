@@ -36,7 +36,7 @@ class CustomerStatementRecordDto(
     var accountNumber: String? = null,
 
     @CsvBindByName(column = "Description")
-    @Schema(name = "Transaction Description", example = "Tickets for Erik", required = true)
+    @Schema(name = "Transaction Description", example = "Tickets for Erik")
     var description: String? = null,
 
     @CsvBindByName(column = "Start Balance")

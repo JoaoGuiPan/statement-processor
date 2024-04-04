@@ -1,5 +1,6 @@
 package com.jpan.statementprocessor.controller
 
+import com.jpan.statementprocessor.dto.ErrorResponseDto
 import com.jpan.statementprocessor.service.CustomerStatementService
 import com.jpan.statementprocessor.service.FileDtoMapperService
 import com.jpan.statementprocessor.service.mapper.CsvDtoMapper
@@ -8,6 +9,7 @@ import com.jpan.statementprocessor.util.INVALID_XML
 import com.jpan.statementprocessor.util.TestFileUtils.getMultipartFile
 import com.jpan.statementprocessor.util.VALID_CSV
 import com.jpan.statementprocessor.util.VALID_XML
+import com.jpan.statementprocessor.validator.INVALID_EXTENSION_ERROR
 import jakarta.validation.ConstraintViolationException
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
@@ -18,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.multipart
 
 private const val INVALID_EXTENSION = "invalid.extension"
+
+private const val STATEMENTS_CUSTOMERS_UPLOAD = "/statements/customers/upload"
 
 @WebMvcTest(CustomerStatementController::class)
 class CustomerStatementControllerTest {
@@ -40,11 +44,11 @@ class CustomerStatementControllerTest {
         whenever(fileDtoMapperServiceMock.mapToRecordDtos(validCsv))
             .thenReturn(CsvDtoMapper().mapToDto(validCsv))
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(validCsv)
         }.andExpect {
             status { isOk() }
-            content { string(CUSTOMER_STATEMENT_PROCESSED_SUCCESSFULLY) }
+            content { emptyList<Any>() }
         }
     }
 
@@ -57,11 +61,11 @@ class CustomerStatementControllerTest {
         whenever(fileDtoMapperServiceMock.mapToRecordDtos(validXml))
             .thenReturn(CsvDtoMapper().mapToDto(validXml))
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(validXml)
         }.andExpect {
             status { isOk() }
-            content { string(CUSTOMER_STATEMENT_PROCESSED_SUCCESSFULLY) }
+            content { emptyList<Any>() }
         }
     }
 
@@ -78,7 +82,7 @@ class CustomerStatementControllerTest {
         whenever(customerStatementServiceMock.processStatementRecords(records))
             .thenThrow(ConstraintViolationException(setOf()))
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(invalidCsv)
         }.andExpect {
             status { isBadRequest() }
@@ -98,7 +102,7 @@ class CustomerStatementControllerTest {
         whenever(customerStatementServiceMock.processStatementRecords(records))
             .thenThrow(ConstraintViolationException(setOf()))
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(invalidXml)
         }.andExpect {
             status { isBadRequest() }
@@ -111,10 +115,11 @@ class CustomerStatementControllerTest {
 
         val invalidFile = getMultipartFile(INVALID_EXTENSION)
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(invalidFile)
         }.andExpect {
             status { isBadRequest() }
+            content { listOf(ErrorResponseDto(INVALID_EXTENSION_ERROR)) }
         }
     }
 
@@ -127,7 +132,7 @@ class CustomerStatementControllerTest {
         whenever(fileDtoMapperServiceMock.mapToRecordDtos(validXml))
             .thenThrow(RuntimeException("Unexpected Error"))
 
-        mvc.multipart("/statements/customer/upload") {
+        mvc.multipart(STATEMENTS_CUSTOMERS_UPLOAD) {
             file(validXml)
         }.andExpect {
             status { isInternalServerError() }

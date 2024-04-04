@@ -1,5 +1,7 @@
 package com.jpan.statementprocessor
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.jpan.statementprocessor.dto.FailedStatementRecordDto
 import com.jpan.statementprocessor.service.CustomerStatementService
 import com.jpan.statementprocessor.service.FileDtoMapperService
 import com.jpan.statementprocessor.util.*
@@ -7,6 +9,7 @@ import jakarta.validation.ConstraintViolationException
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import java.math.BigInteger
 
 @SpringBootTest(
 	classes = [StatementProcessorApplication::class],
@@ -19,6 +22,9 @@ class StatementProcessorApplicationTests {
 
 	@Autowired
 	lateinit var customerStatementService: CustomerStatementService
+
+	@Autowired
+	lateinit var objectMapper: ObjectMapper
 
 	@Test
 	@Throws(Exception::class)
@@ -44,10 +50,9 @@ class StatementProcessorApplicationTests {
 		try {
 			customerStatementService.processStatementRecords(recordDtos)
 		} catch (ex: ConstraintViolationException) {
-			assert(ex.message == "processStatementRecords.customerStatementRecordDtos: Reference,Description,Failed Reason\n" +
-					"112806,Subscription from Jan Dekker,Transaction reference should be unique.\n" +
-					"112806,Subscription from Dani�l Theu�,Transaction reference should be unique.\n" +
-					"112806,Subscription for Rik Dekker,Transaction reference should be unique.\n")
+			assert(
+				getFailedRecordsFromException(ex).containsAll(112806, 112806, 112806)
+			)
 		}
 	}
 
@@ -75,9 +80,16 @@ class StatementProcessorApplicationTests {
 		try {
 			customerStatementService.processStatementRecords(recordDtos)
 		} catch (ex: ConstraintViolationException) {
-			assert(ex.message == "processStatementRecords.customerStatementRecordDtos: Reference,Description,Failed Reason\n" +
-					"131254,Candy from Vincent de Vries,End Balance must be equal to Start Balance plus/minus Mutation.\n" +
-					"192480,Subscription for Erik de Vries,End Balance must be equal to Start Balance plus/minus Mutation.\n")
+			assert(
+				getFailedRecordsFromException(ex).containsAll(131254, 192480)
+			)
 		}
 	}
+
+	private fun getFailedRecordsFromException(ex: ConstraintViolationException) = ex.constraintViolations.map {
+		objectMapper.readValue(it.message, FailedStatementRecordDto::class.java)
+	}
+
+	private fun List<FailedStatementRecordDto>.containsAll(vararg references: Long) =
+		this.map { it.reference }.containsAll(references.map { BigInteger.valueOf(it) })
 }

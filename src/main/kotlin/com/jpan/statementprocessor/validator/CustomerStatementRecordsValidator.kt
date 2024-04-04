@@ -1,7 +1,7 @@
 package com.jpan.statementprocessor.validator
 
 import com.jpan.statementprocessor.dto.CustomerStatementRecordDto
-import com.jpan.statementprocessor.util.buildRecordMessageTemplate
+import com.jpan.statementprocessor.dto.buildFrom
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Constraint
 import jakarta.validation.ConstraintValidator
@@ -10,8 +10,9 @@ import kotlin.reflect.KClass
 
 private val logger = KotlinLogging.logger {}
 
-private const val ERROR_CSV_HEADER = "Reference,Description,Failed Reason\n"
 private const val STATEMENT_VALIDATION_MESSAGE = "Statement records contain errors."
+private const val END_BALANCE_INVALID = "End Balance must be equal to Start Balance plus/minus Mutation."
+private const val REFERENCE_INVALID = "Transaction reference should be unique."
 
 @Constraint(validatedBy = [CustomerStatementRecordsValidator::class])
 @Target(
@@ -33,37 +34,29 @@ class CustomerStatementRecordsValidator: ConstraintValidator<ValidateStatementRe
 
         var isValid = true
 
-        var templateErrorMessage = ERROR_CSV_HEADER
+        context.disableDefaultConstraintViolation()
 
         value.forEach {
             if (endBalanceIsNotValid(it)) {
-                logger.debug { "End Balance is not valid on transaction ${it.reference}" }
                 isValid = false
-                templateErrorMessage += buildRecordMessageTemplate(it, "End Balance must be equal to Start Balance plus/minus Mutation.")
+                logger.debug { "End Balance is not valid on transaction ${it.reference}" }
+                val failedRecord = buildFrom(it, END_BALANCE_INVALID)
+                addErrorMessage(context, failedRecord.toString())
             }
-        }
 
-        val duplicateOccurrences = getDuplicateTransactions(value)
-        if (duplicateOccurrences.isNotEmpty()) {
-            isValid = false
-            duplicateOccurrences.forEach {
+            if(transactionReferenceIsDuplicated(value, it)) {
+                isValid = false
                 logger.debug { "Transaction reference ${it.reference} is duplicated" }
-                templateErrorMessage += buildRecordMessageTemplate(it, "Transaction reference should be unique.")
+                val failedRecord = buildFrom(it, REFERENCE_INVALID)
+                addErrorMessage(context, failedRecord.toString())
             }
-        }
-
-        if (!isValid) {
-            addErrorMessage(context, templateErrorMessage)
         }
 
         return isValid
     }
 
     private fun addErrorMessage(context: ConstraintValidatorContext, templateErrorMessage: String) {
-        context.disableDefaultConstraintViolation()
-        context
-            .buildConstraintViolationWithTemplate(templateErrorMessage)
-            .addConstraintViolation()
+        context.buildConstraintViolationWithTemplate(templateErrorMessage).addConstraintViolation()
     }
 
     private fun endBalanceIsNotValid(recordDto: CustomerStatementRecordDto): Boolean {
@@ -71,19 +64,8 @@ class CustomerStatementRecordsValidator: ConstraintValidator<ValidateStatementRe
         return calculatedEndBalance?.equals(recordDto.endBalance) == false
     }
 
-    private fun getDuplicateTransactions(records: List<CustomerStatementRecordDto>): List<CustomerStatementRecordDto> {
-        val duplicateTransactions = ArrayList<CustomerStatementRecordDto>()
-
-        val duplicatesGroupedBy = records.groupingBy {
-            it.reference
-        }.eachCount().filter { it.value > 1 }
-
-        duplicatesGroupedBy.keys.forEach { reference ->
-            records
-                .filter { it.reference == reference }
-                .forEach { duplicateTransactions.addLast(it) }
-        }
-
-        return duplicateTransactions
+    private fun transactionReferenceIsDuplicated(allRecords: List<CustomerStatementRecordDto>,
+                                                 recordDto: CustomerStatementRecordDto): Boolean {
+        return allRecords.count { it.reference == recordDto.reference } > 1
     }
 }

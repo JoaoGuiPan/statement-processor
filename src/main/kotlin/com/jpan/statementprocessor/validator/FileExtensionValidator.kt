@@ -7,6 +7,8 @@ import jakarta.validation.ConstraintValidatorContext
 import org.springframework.web.multipart.MultipartFile
 import kotlin.reflect.KClass
 
+const val INVALID_EXTENSION_ERROR = "Supported file extensions are .csv or .xml"
+
 @Constraint(validatedBy = [FileExtensionValidator::class])
 @Target(
     AnnotationTarget.VALUE_PARAMETER
@@ -16,7 +18,7 @@ import kotlin.reflect.KClass
 )
 @MustBeDocumented
 annotation class ValidFileExtension(
-    val message: String = "Supported file extensions are .csv or .xml",
+    val message: String = INVALID_EXTENSION_ERROR,
     val groups: Array<KClass<*>> = [],
     val payload: Array<KClass<out Any>> = []
 )

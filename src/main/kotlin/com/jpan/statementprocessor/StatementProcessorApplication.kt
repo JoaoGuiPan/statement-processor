@@ -8,6 +8,4 @@ class StatementProcessorApplication
 
 fun main(args: Array<String>) {
 	runApplication<StatementProcessorApplication>(*args)
-
-
 }

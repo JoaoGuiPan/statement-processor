@@ -1,0 +1,3 @@
+package com.jpan.statementprocessor.dto
+
+interface GenericErrorResponse
